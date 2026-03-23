@@ -67,14 +67,28 @@ class FaceRaterAPI(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
-        # --- Root redirect ---
+        # Root redirect
         if path == '/':
             self.send_response(302)
             self.send_header('Location', '/login.html')
             self.end_headers()
             return
 
-        # --- API endpoints ---
+        # Debug endpoint to list files in 'public'
+        if path == '/debug':
+            try:
+                files = os.listdir('public')
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/plain')
+                self.end_headers()
+                self.wfile.write(f"Contents of public: {files}".encode())
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(str(e).encode())
+            return
+
+        # API endpoints
         if path == '/api/data':
             conn = get_db_connection()
             if DATABASE_URL:
@@ -131,7 +145,7 @@ class FaceRaterAPI(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(csv_data.encode('utf-8'))
 
-        # --- Static files (from 'public' folder) ---
+        # Static files (from 'public' folder)
         else:
             # Security: prevent directory traversal
             if '..' in path:
