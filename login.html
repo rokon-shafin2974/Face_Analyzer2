@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Face Analyzer</title>
+    <style>
+        :root { --bg: #09090b; --card: rgba(24, 24, 27, 0.85); --text: #f8fafc; --accent: #8b5cf6; }
+        body { 
+            background-color: var(--bg);
+            background-image: linear-gradient(rgba(9, 9, 11, 0.8), rgba(9, 9, 11, 0.9)), url('https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1965&auto=format&fit=crop'); 
+            background-size: cover; background-position: center;
+            color: var(--text); font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
+        }
+        
+        .container { background: var(--card); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 15px 30px rgba(0,0,0,0.8); position: relative; overflow: hidden; width: 768px; max-width: 100%; min-height: 480px; border: 1px solid rgba(255,255,255,0.1); }
+        .form-container { position: absolute; top: 0; height: 100%; transition: all 0.6s ease-in-out; }
+        
+        .user-container { left: 0; width: 50%; z-index: 2; }
+        .container.right-panel-active .user-container { transform: translateX(100%); opacity: 0; }
+        
+        .admin-container { left: 0; width: 50%; opacity: 0; z-index: 1; }
+        .container.right-panel-active .admin-container { transform: translateX(100%); opacity: 1; z-index: 5; animation: show 0.6s; }
+        
+        @keyframes show { 0%, 49.99% { opacity: 0; z-index: 1; } 50%, 100% { opacity: 1; z-index: 5; } }
+        
+        form { background: transparent; display: flex; flex-direction: column; padding: 0 50px; height: 100%; justify-content: center; align-items: center; text-align: center; }
+        h1 { margin-bottom: 20px; color: var(--accent); }
+        input { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 12px 15px; margin: 8px 0; width: 100%; border-radius: 8px; color: white; }
+        button { border-radius: 8px; border: none; background: var(--accent); color: white; font-size: 14px; font-weight: bold; padding: 12px 45px; margin-top: 15px; cursor: pointer; transition: transform 80ms ease-in; width: 100%; }
+        button:active { transform: scale(0.95); }
+        
+        .overlay-container { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; overflow: hidden; transition: transform 0.6s ease-in-out; z-index: 100; }
+        .container.right-panel-active .overlay-container { transform: translateX(-100%); }
+        
+        .overlay { background: linear-gradient(to right, #3b82f6, #8b5cf6); color: white; position: relative; left: -100%; height: 100%; width: 200%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+        .container.right-panel-active .overlay { transform: translateX(50%); }
+        
+        .overlay-panel { position: absolute; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 40px; text-align: center; top: 0; height: 100%; width: 50%; transform: translateX(0); transition: transform 0.6s ease-in-out; box-sizing: border-box; }
+        .overlay-left { transform: translateX(-20%); }
+        .container.right-panel-active .overlay-left { transform: translateX(0); }
+        .overlay-right { right: 0; transform: translateX(0); }
+        .container.right-panel-active .overlay-right { transform: translateX(20%); }
+        
+        button.ghost { background-color: transparent; border: 2px solid white; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="container">
+    <div class="form-container admin-container">
+        <form onsubmit="handleLogin(event, 'admin')">
+            <h1>Admin Access</h1>
+            <input type="text" id="admin_username" placeholder="Admin ID" required />
+            <input type="password" id="admin_password" placeholder="Password" required />
+            <button type="submit">System Login</button>
+        </form>
+    </div>
+
+    <div class="form-container user-container">
+        <form onsubmit="handleLogin(event, 'user')">
+            <h1>Face Analyzer</h1>
+            <input type="text" id="user_username" placeholder="Username" required />
+            <input type="password" id="user_password" placeholder="Password" required />
+            <button type="submit">Sign In</button>
+        </form>
+    </div>
+
+    <div class="overlay-container">
+        <div class="overlay">
+            <div class="overlay-panel overlay-left">
+                <h1>Standard User?</h1>
+                <p>Return to the main portal to start analyzing.</p>
+                <button class="ghost" id="signIn">User Login</button>
+            </div>
+            <div class="overlay-panel overlay-right">
+                <h1>Admin Portal</h1>
+                <p>Slide to access the administrative dashboard.</p>
+                <button class="ghost" id="signUp">Admin Login</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const signUpButton = document.getElementById('signUp');
+    const signInButton = document.getElementById('signIn');
+    const container = document.getElementById('container');
+
+    signUpButton.addEventListener('click', () => container.classList.add('right-panel-active'));
+    signInButton.addEventListener('click', () => container.classList.remove('right-panel-active'));
+
+    async function handleLogin(e, type) {
+        e.preventDefault();
+        const username = document.getElementById(`${type}_username`).value;
+        const password = document.getElementById(`${type}_password`).value;
+
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                localStorage.setItem('loggedIn', 'true');
+                localStorage.setItem('role', data.role);
+                localStorage.setItem('username', username);
+
+                if (data.role === 'admin' && type === 'admin') window.location.href = 'admin.html';
+                else if (data.role === 'user' && type === 'user') window.location.href = 'index.html';
+                else alert("Account type mismatch.");
+            } else {
+                alert(data.error || "Login failed.");
+            }
+        } catch (err) { alert("Server connection failed."); }
+    }
+</script>
+
+</body>
+</html>

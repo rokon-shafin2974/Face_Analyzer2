@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc; --surface: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+            --border: #e2e8f0; --primary: #3b82f6; --primary-hover: #2563eb;
+            --danger: #ef4444; --danger-bg: #fee2e2; --danger-text: #b91c1c;
+            --success: #10b981; --success-hover: #059669; --input-bg: #f8fafc;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --radius: 12px; --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.dark-mode {
+            --bg: #0f172a; --surface: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
+            --border: #334155; --input-bg: #0f172a; --danger-bg: #7f1d1d; --danger-text: #fca5a5;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main);
+            margin: 0; padding: 2rem 1rem; min-height: 100vh; transition: var(--transition);
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+        .header-section h1 { font-size: 1.75rem; font-weight: 700; margin: 0; letter-spacing: -0.025em; }
+
+        .header-buttons { display: flex; gap: 0.75rem; }
+        
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; padding: 0.625rem 1rem;
+            border-radius: 8px; font-weight: 600; font-size: 0.875rem; border: none; cursor: pointer;
+            transition: var(--transition); text-decoration: none;
+        }
+
+        .btn-primary { background: var(--primary); color: white; box-shadow: var(--shadow-sm); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        .btn-success { background: var(--success); color: white; box-shadow: var(--shadow-sm); }
+        .btn-success:hover { background: var(--success-hover); transform: translateY(-1px); }
+
+        .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-outline:hover { background: var(--input-bg); }
+
+        .btn-danger { background: var(--danger-bg); color: var(--danger-text); padding: 0.375rem 0.75rem; font-size: 0.75rem; border-radius: 6px; }
+        .btn-danger:hover { background: var(--danger); color: white; }
+
+        .card {
+            background: var(--surface); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md); border: 1px solid var(--border); animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card h2 { margin-top: 0; font-size: 1.25rem; font-weight: 600; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .card h3 { font-size: 0.875rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 0.75rem 1rem; background: var(--input-bg); color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+        th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+        th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+        td { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; color: var(--text-main); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: var(--input-bg); }
+
+        .inline-form { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+        input, select {
+            padding: 0.625rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg);
+            color: var(--text-main); font-size: 0.875rem; transition: var(--transition); outline: none; flex: 1; min-width: 150px;
+        }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        input[type="file"] { padding: 0.5rem; background: var(--surface); border: 1px dashed var(--border); cursor: pointer; }
+
+        .role-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+        .role-admin { background: #dbeafe; color: #1e40af; } .role-user { background: #e0e7ff; color: #3730a3; }
+        body.dark-mode .role-admin { background: #1e3a8a; color: #bfdbfe; } body.dark-mode .role-user { background: #312e81; color: #c7d2fe; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>Admin Dashboard</h1>
+            <div class="header-buttons">
+                <a href="/api/export/ratings" class="btn btn-success">📊 Download CSV</a>
+                <button id="darkModeToggle" class="btn btn-outline">🌙 Theme</button>
+                <button onclick="logout()" class="btn btn-outline">🚪 Logout</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Data Management (Ratings)</h2>
+            <table>
+                <thead><tr><th>ID</th><th>Subject Name</th><th>Rating</th><th>Action</th></tr></thead>
+                <tbody id="dataTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="card" id="userManagementCard" style="display: none;">
+            <h2>User Management</h2>
+            <table style="margin-bottom: 1.5rem;">
+                <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Action</th></tr></thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+
+            <h3>Add New User</h3>
+            <div class="inline-form">
+                <input type="text" id="newUsername" placeholder="Username">
+                <input type="password" id="newPassword" placeholder="Password">
+                <select id="newRole"><option value="user">User</option><option value="admin">Admin</option></select>
+                <button id="addUserBtn" onclick="addUser()" class="btn btn-primary">Add User</button>
+            </div>
+        </div>
+
+        <div class="card" id="systemSettingsCard" style="display: none;">
+            <h2>System Settings</h2>
+            <h3>Change App Background</h3>
+            <div class="inline-form" style="max-width: 450px;">
+                <input type="file" id="localBgImage" accept="image/*">
+                <button onclick="updateBackground()" class="btn btn-primary" style="flex: 0;">Save</button>
+            </div>
+            <p id="bgStatus" style="font-size: 13px; margin-top: 10px; font-weight: 600;"></p>
+        </div>
+    </div>
+
+    <script>
+        // Check Auth
+        const role = localStorage.getItem("role");
+        if (!role) { window.location.href = "login.html"; }
+        
+        // Load UI based on role
+        if (role === "admin") {
+            document.getElementById("userManagementCard").style.display = "block";
+            document.getElementById("systemSettingsCard").style.display = "block";
+            loadUsers();
+        }
+
+        loadData();
+
+        // Dark Mode Logic
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        });
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+            } catch (error) {}
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch('/api/data');
+                const data = await res.json();
+                const tbody = document.getElementById("dataTableBody");
+                tbody.innerHTML = "";
+                
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${item.id}</strong></td>
+                        <td>${item.name || 'Unknown'}</td>
+                        <td><strong style="color: var(--primary); font-size: 1.1em;">${item.rating}</strong></td>
+                        <td><button class="btn-danger" onclick="deleteData(${item.id})">Delete</button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) { console.error("Error loading ratings data:", error); }
+        }
+
+        async function deleteData(id) {
+            if(confirm("Delete this rating?")) {
+                await fetch('/api/data/remove', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id}) });
+                loadData();
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users');
+                const users = await res.json();
+                const tbody = document.getElementById("userTableBody");
+                tbody.innerHTML = "";
+                users.forEach(u => {
+                    const roleClass = u.role === 'admin' ? 'role-admin' : 'role-user';
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${u.id}</strong></td>
+                        <td>${u.username}</td>
+                        <td><span class="role-badge ${roleClass}">${u.role}</span></td>
+                        <td><button class="btn-danger" onclick="deleteUser(${u.id})">Delete</button></td>
+                    </tr>`;
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        async function deleteUser(id) {
+            if(confirm("Delete this user?")) {
+                await fetch('/api/users/remove', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id}) });
+                loadUsers();
+            }
+        }
+
+        async function addUser() {
+            const u = document.getElementById("newUsername").value;
+            const p = document.getElementById("newPassword").value;
+            const r = document.getElementById("newRole").value;
+            if(!u || !p) return alert("Fill all fields");
+
+            const btn = document.getElementById("addUserBtn");
+            const oldText = btn.innerText;
+            btn.innerText = "Adding..."; btn.disabled = true;
+
+            await fetch('/api/users/add', { 
+                method: 'POST', headers:{'Content-Type':'application/json'}, 
+                body: JSON.stringify({username:u, password:p, role:r}) 
+            });
+            
+            btn.innerText = oldText; btn.disabled = false;
+            document.getElementById("newUsername").value = "";
+            document.getElementById("newPassword").value = "";
+            loadUsers();
+        }
+
+        function updateBackground() {
+            const fileInput = document.getElementById('localBgImage');
+            const status = document.getElementById('bgStatus');
+            if (fileInput.files.length === 0) {
+                status.innerText = "Please select an image file first."; status.style.color = "var(--danger)"; return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const base64Image = event.target.result;
+                status.innerText = "Uploading background..."; status.style.color = "var(--primary)";
+                try {
+                    const res = await fetch('/api/settings/background', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: base64Image })
+                    });
+                    if (res.ok) {
+                        status.innerText = "Background successfully updated!"; status.style.color = "var(--success)"; fileInput.value = ""; 
+                    }
+                } catch (e) { status.innerText = "Failed to update."; status.style.color = "var(--danger)"; }
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>

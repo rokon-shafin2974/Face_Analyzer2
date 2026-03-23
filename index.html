@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc; --surface: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+            --border: #e2e8f0; --primary: #3b82f6; --primary-hover: #2563eb;
+            --input-bg: #f8fafc; --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius: 16px; --transition: all 0.2s ease;
+        }
+        body.dark-mode {
+            --bg: #0f172a; --surface: #1e293b; --text-main: #f8fafc;
+            --text-muted: #94a3b8; --border: #334155; --input-bg: #0f172a;
+        }
+        body {
+            font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main);
+            margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 2rem 1rem;
+            transition: var(--transition); background-size: cover; background-position: center; background-attachment: fixed;
+        }
+        
+        .nav-bar { width: 100%; max-width: 500px; display: flex; justify-content: space-between; margin-bottom: 2rem; }
+        
+        .btn-ghost {
+            background: var(--surface); border: 1px solid var(--border); color: var(--text-main);
+            padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); text-decoration: none; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        }
+        .btn-ghost:hover { background: var(--input-bg); transform: translateY(-1px); }
+        
+        .main-card {
+            background: var(--surface); width: 100%; max-width: 500px; border-radius: var(--radius);
+            padding: 2.5rem; box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+            box-sizing: border-box; position: relative;
+        }
+        h1 { margin: 0 0 0.5rem; font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; text-align: center; }
+        p.subtitle { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 2rem; text-align: center; }
+        
+        .dropzone {
+            position: relative; border: 2px dashed var(--border); border-radius: 12px; height: 250px;
+            background: var(--input-bg); color: var(--text-muted); font-weight: 600; cursor: pointer;
+            transition: var(--transition); margin-bottom: 1.5rem; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; overflow: hidden;
+        }
+        .dropzone:hover { border-color: var(--primary); background: rgba(59, 130, 246, 0.03); color: var(--primary); }
+        .dropzone input[type="file"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
+        #imagePreview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: none; z-index: 1; border-radius: 10px; }
+        
+        .input-group { text-align: left; margin-bottom: 1.25rem; }
+        .input-group label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; }
+        input[type="text"], input[type="number"] {
+            width: 100%; box-sizing: border-box; padding: 0.875rem 1rem; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main);
+            font-size: 1rem; transition: var(--transition); outline: none; font-family: inherit;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        input[readonly] { background: var(--border); color: var(--text-muted); cursor: not-allowed; opacity: 0.7; }
+        
+        .btn-submit {
+            width: 100%; background: var(--primary); color: white; border: none; padding: 1rem;
+            border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: var(--transition);
+            margin-top: 0.5rem; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+        }
+        .btn-submit:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.3); }
+
+        /* Status Badge Upgrades */
+        .status-badge {
+            display: none; text-align: center; padding: 1rem; border-radius: 8px;
+            margin-bottom: 1.5rem; font-size: 0.875rem; line-height: 1.6; font-weight: 500;
+            border: 1px solid transparent; transition: var(--transition);
+        }
+        .status-badge b { font-weight: 700; }
+        .status-badge hr { border: 0; height: 1px; background: var(--border); margin: 10px 0; opacity: 0.5; }
+        
+        .status-active { background-color: rgba(59, 130, 246, 0.1); color: var(--primary); border-color: rgba(59, 130, 246, 0.2); }
+        .status-success { background-color: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+        body.dark-mode .status-success { color: #34d399; }
+        
+        #statusMessage { text-align: center; margin-top: 15px; font-weight: 600; font-size: 14px; min-height: 20px; color: #ef4444; }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="nav-bar">
+        <button class="btn-ghost" onclick="logout()">🚪 Logout</button>
+        <button class="btn-ghost" id="darkModeToggle">🌙 Dark Mode</button>
+    </div>
+    
+    <div class="main-card">
+        <h1>Face Analyzer</h1>
+        <p class="subtitle">Upload multiple photos and rate them one by one.</p>
+        
+        <form id="ratingForm">
+            <div class="input-group" style="margin-bottom: 0.5rem;"><label>Upload Images (Select Multiple)</label></div>
+            <div class="dropzone" id="dropzone">
+                <span style="z-index: 1;">📸 Click to select files</span>
+                <input type="file" id="imageFile" accept="image/*" multiple>
+                <img id="imagePreview" src="" alt="Preview">
+            </div>
+            
+            <div class="input-group">
+                <label for="subjectName">Subject/Folder Name</label>
+                <input type="text" id="subjectName" required placeholder="e.g. Batch 1">
+            </div>
+            
+            <div class="input-group">
+                <label for="faceRating">Rating (1-10)</label>
+                <input type="number" id="faceRating" min="1" max="10" step="0.1" required placeholder="e.g. 8.5">
+            </div>
+
+            <div id="queueStatus" class="status-badge">Rating 1 of 5</div>
+            
+            <button type="submit" class="btn-submit" id="submitBtn">Submit Rating</button>
+        </form>
+        <p id="statusMessage"></p>
+    </div>
+
+    <script>
+        // UPGRADED LOGOUT FUNCTION: Guarantees redirect to login.html
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+            } catch (error) {
+                console.log("Network error during logout, redirecting anyway.");
+            } finally {
+                window.location.href = 'login.html'; 
+            }
+        }
+
+        // Fetch Background
+        fetch('/api/settings/background').then(res => res.json()).then(data => { if(data.url) document.body.style.backgroundImage = `url('${data.url}')`; });
+        
+        // Theme toggle logic
+        if (localStorage.getItem('theme') === 'light') document.body.classList.remove('dark-mode');
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        });
+
+        // Queue Logic
+        let imageQueue = [];
+        let currentQueueIndex = 0;
+        let base64Image = "";
+        let sessionRatings = []; 
+        let currentBatchName = ""; 
+
+        document.getElementById('imageFile').addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length === 0) return;
+            
+            imageQueue = Array.from(files);
+            currentQueueIndex = 0;
+            sessionRatings = [];
+            currentBatchName = "";
+            
+            document.getElementById('subjectName').readOnly = false;
+            document.getElementById('subjectName').value = "";
+            
+            document.getElementById('queueStatus').style.display = 'block';
+            document.getElementById('queueStatus').className = 'status-badge status-active';
+            loadNextImageInQueue();
+        });
+
+        function loadNextImageInQueue(lastRatingMsg = "") {
+            if (currentQueueIndex >= imageQueue.length) {
+                let finalMeanMsg = "";
+                if (sessionRatings.length > 0) {
+                    const finalMean = (sessionRatings.reduce((a,b) => a+b, 0) / sessionRatings.length).toFixed(2);
+                    finalMeanMsg = `<br><span style="font-size:15px; margin-top: 4px; display: inline-block;">📊 Final Folder Mean: <b>${finalMean}</b></span>`;
+                }
+                
+                document.getElementById('queueStatus').innerHTML = `${lastRatingMsg}<br>🎉 <b>All images in folder rated!</b>${finalMeanMsg}`;
+                document.getElementById('queueStatus').className = 'status-badge status-success';
+                document.getElementById('imagePreview').style.display = 'none';
+                document.getElementById('ratingForm').reset();
+                document.getElementById('subjectName').readOnly = false; 
+                imageQueue = [];
+                currentQueueIndex = 0;
+                base64Image = "";
+                sessionRatings = [];
+                currentBatchName = "";
+                return;
+            }
+
+            const file = imageQueue[currentQueueIndex];
+            let statusText = `<b>Rating image ${currentQueueIndex + 1} of ${imageQueue.length}</b>`;
+            
+            if (sessionRatings.length > 0) {
+                const currentMean = (sessionRatings.reduce((a,b) => a+b, 0) / sessionRatings.length).toFixed(2);
+                statusText += `<br>📈 Real-time Mean: <b>${currentMean}</b> (from ${sessionRatings.length} rated)`;
+            }
+
+            if (lastRatingMsg !== "") {
+                statusText = `${lastRatingMsg}<hr>${statusText}`;
+            }
+            
+            document.getElementById('queueStatus').innerHTML = statusText;
+            document.getElementById('queueStatus').className = 'status-badge status-active';
+            
+            if (currentQueueIndex === 0) {
+                document.getElementById('subjectName').value = file.name.split('.')[0];
+            } else {
+                document.getElementById('subjectName').value = currentBatchName;
+                document.getElementById('subjectName').readOnly = true;
+            }
+            
+            document.getElementById('faceRating').value = ''; 
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                base64Image = event.target.result;
+                const preview = document.getElementById('imagePreview');
+                preview.src = base64Image;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('ratingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('subjectName').value;
+            const rating = parseFloat(document.getElementById('faceRating').value);
+            const statusMsg = document.getElementById('statusMessage');
+            const btn = document.getElementById('submitBtn');
+
+            if (currentQueueIndex === 0) {
+                currentBatchName = name;
+            }
+
+            btn.innerText = "Submitting...";
+
+            try {
+                const response = await fetch('/api/rate', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, rating, image: base64Image })
+                });
+
+                if (response.ok) {
+                    sessionRatings.push(rating); 
+                    const lastRatingMsg = `✅ Image scored <b>${rating}</b>`;
+                    
+                    if (imageQueue.length > 0) {
+                        currentQueueIndex++;
+                        loadNextImageInQueue(lastRatingMsg);
+                    } else {
+                        document.getElementById('ratingForm').reset();
+                        document.getElementById('imagePreview').style.display = 'none';
+                        base64Image = "";
+                    }
+                } else {
+                    statusMsg.innerText = '❌ Error saving rating.';
+                }
+            } catch (error) {
+                statusMsg.innerText = '❌ Server error.';
+            } finally {
+                btn.innerText = "Submit Rating";
+                setTimeout(() => statusMsg.innerText = "", 2000);
+            }
+        });
+    </script>
+</body>
+</html>
