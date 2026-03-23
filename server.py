@@ -6,10 +6,9 @@ import os
 import mimetypes
 import sys
 
-# Detect database engine
+# Database selection based on DATABASE_URL
 DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL:
-    # Use PostgreSQL (for Render)
     import psycopg2
     import psycopg2.extras
     def get_db_connection():
@@ -29,7 +28,6 @@ if DATABASE_URL:
         c.close()
         conn.close()
 else:
-    # Use SQLite (for local development)
     import sqlite3
     def get_db_connection():
         return sqlite3.connect('facerater.db')
@@ -69,22 +67,22 @@ class FaceRaterAPI(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
+        # --- Root redirect ---
         if path == '/':
             self.send_response(302)
             self.send_header('Location', '/login.html')
             self.end_headers()
             return
 
+        # --- API endpoints ---
         if path == '/api/data':
             conn = get_db_connection()
             if DATABASE_URL:
-                # PostgreSQL
                 c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
                 query = "SELECT p.id as id, p.name as name, ROUND(CAST(AVG(r.rating) AS numeric), 2) as rating FROM Ratings r JOIN Persons p ON r.person_id = p.id GROUP BY p.id, p.name ORDER BY p.id DESC"
                 c.execute(query)
                 data = c.fetchall()
             else:
-                # SQLite
                 conn.row_factory = sqlite3.Row
                 c = conn.cursor()
                 query = "SELECT p.id as id, p.name as name, ROUND(AVG(r.rating), 2) as rating FROM Ratings r JOIN Persons p ON r.person_id = p.id GROUP BY p.id, p.name ORDER BY p.id DESC"
@@ -133,8 +131,9 @@ class FaceRaterAPI(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(csv_data.encode('utf-8'))
 
+        # --- Static files (from 'public' folder) ---
         else:
-            # Serve static files from the 'public' folder
+            # Security: prevent directory traversal
             if '..' in path:
                 self.send_error(403)
                 return
@@ -161,7 +160,10 @@ class FaceRaterAPI(http.server.SimpleHTTPRequestHandler):
 
         try:
             if parsed.path == '/api/login':
-                c.execute("SELECT role FROM Users WHERE username=%s AND password=%s" if DATABASE_URL else "SELECT role FROM Users WHERE username=? AND password=?", (body.get('username'), body.get('password')))
+                if DATABASE_URL:
+                    c.execute("SELECT role FROM Users WHERE username=%s AND password=%s", (body.get('username'), body.get('password')))
+                else:
+                    c.execute("SELECT role FROM Users WHERE username=? AND password=?", (body.get('username'), body.get('password')))
                 user = c.fetchone()
                 if user:
                     self.send_json({"status": "success", "role": user[0]})
